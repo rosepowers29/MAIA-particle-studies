@@ -1,0 +1,2 @@
+## Scripts for neutral object studies in the MAIA detector
+Run `study_photons.py` or `study_neutrons.py` to ntuplize reconstructed photon and neutron samples. Run `resolution.py` to study energy resolution; fit a Gaussian to the resolution in each energy bin, output csv files with the resolution and error for easy access and plotting. To study efficiency, create a TEfficiency object using the `_pass` and `_all` histograms created in the `study_*` scripts.
