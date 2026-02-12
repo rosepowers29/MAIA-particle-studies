@@ -88,6 +88,11 @@ else:
 filenum=0
 nevts_proc = 0
 for file in to_process:
+    if filenum < options.start:
+        filenum = filenum + 1
+        continue
+    if filenum > options.end:
+        break
     # create a reader and open an LCIO file
     reader = IOIMPL.LCFactory.getInstance().createLCReader()
     try:
@@ -95,17 +100,17 @@ for file in to_process:
     except Exception:
         #let it skip the bad files without breaking
         print("skipping file", filenum)
+        filenum = filenum+1
         continue
     filenum=filenum+1
     # loop over all events in the file
     for ievt, event in enumerate(reader):
-        print("got into ievt loop")
-        if ievt % 1 == 0:
+        if filenum % 10 == 0:
             print(" ")
             print("File "+str(filenum))
             print("Processing event " + str(ievt))
 
-        print(event.getCollectionNames())
+        #print(event.getCollectionNames())
 
         # Fill the truth-level histos, the first particle is always the gun
         mcpCollection = event.getCollection('MCParticle')
@@ -167,6 +172,7 @@ for file in to_process:
     reader.close()
     
 # write histograms
+print("out of main loop")
 try:
     outfile_name = f"{options.outFile}_{options.start}-{options.end}.root"
 except Exception:

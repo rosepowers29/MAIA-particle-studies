@@ -37,10 +37,10 @@ particle = args.particle
 label = args.label
 
 # Energy binning
-EBins_photon = array('d', (30.,50.,100.,150.,200.,300.,400.,500.,650.,
-    800.,1000., 1500., 2000., 2500., 3000., 3500., 4000., 4500., 5000.))
+#EBins_photon = array('d', (30.,50.,100.,150.,200.,300.,400.,500.,650.,
+#    800.,1000., 1500., 2000., 2500., 3000., 3500., 4000., 4500., 5000.))
 EBins_neutron = array('d', (20.,40.,65.,100., 150., 200., 250.))
-#EBins_photon = array('d', (5., 10., 20., 30., 40., 50.))
+EBins_photon = array('d', (10., 20., 30., 40., 50.))
 #ThetaBins = np.linspace(0.175,2.96,30)
 NPhotonBins = np.linspace(0,50,50)
 
@@ -65,6 +65,15 @@ mu_arr_th = array('d')
 mu_arr_th_err = array('d')
 res_arr = array('d')
 res_err_arr = array('d')
+
+def prop_error(mu, sigma, mu_err, sigma_err):
+    """
+    Helper function to propagate the error on resolution measurement in quadrature
+    """
+    res = sigma / (mu+1) #scaled resolution
+    res_err = res * np.sqrt((sigma_err / sigma)**2 + (mu_err / (mu+1))**2)
+    return res_err
+
 ################### RESOLUTION STUDY #################
 cx = TCanvas("", "", 800, 600)
 gStyle.SetOptStat(1)
@@ -182,17 +191,17 @@ for Ebin in range(0, len(EBins)-1):
         mu_err = gaussFit1.GetParError(1)
 
         # res -- resolution, sigma scaled by mu
-        res = sigma / mu
+        res = sigma / (mu+1)
         res_err = prop_error(mu, sigma, mu_err, sigma_err)
 
         res_arr.append(res)
         res_err_arr.append(res_err)
 
-
+        print(res)
+        print(res_err)
         bincenter = (EMax-EMin)/2
         e_arr.append(EMin+bincenter)
         e_err_arr.append(bincenter)
-        scaled_sigma_arr.append(sigma / mu)
         mu_arr.append(gaussFit1.GetParameter(1))
         mu_err_arr.append(gaussFit1.GetParError(1))
         sigma_err_arr.append(sigma_err)
@@ -268,10 +277,3 @@ res_info = pd.DataFrame({'E': e_arr, 'res': res_arr, 'E_err': e_err_arr, 'res_er
 res_info.to_csv(f"{label}_resoarrays_{particle}_{region}.csv")
 
 
-def prop_error(mu, sigma, mu_err, sigma_err):
-    """
-    Helper function to propagate the error on resolution measurement in quadrature
-    """
-    res = sigma / mu #scaled resolution
-    res_err = res * np.sqrt((sigma_err / sigma)**2 + (mu_err / mu)**2)
-    return res_err
