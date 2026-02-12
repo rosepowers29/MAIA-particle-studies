@@ -36,11 +36,11 @@ particle = args.particle
 #grab the label
 label = args.label
 
-# Energy binning (EPJC style), angular binning
+# Energy binning
 EBins_photon = array('d', (30.,50.,100.,150.,200.,300.,400.,500.,650.,
     800.,1000., 1500., 2000., 2500., 3000., 3500., 4000., 4500., 5000.))
 EBins_neutron = array('d', (20.,40.,65.,100., 150., 200., 250.))
-
+#EBins_photon = array('d', (5., 10., 20., 30., 40., 50.))
 #ThetaBins = np.linspace(0.175,2.96,30)
 NPhotonBins = np.linspace(0,50,50)
 
@@ -63,7 +63,8 @@ mu_arr = array('d')
 mu_err_arr = array('d')
 mu_arr_th = array('d')
 mu_arr_th_err = array('d')
-
+res_arr = array('d')
+res_err_arr = array('d')
 ################### RESOLUTION STUDY #################
 cx = TCanvas("", "", 800, 600)
 gStyle.SetOptStat(1)
@@ -85,7 +86,7 @@ for Ebin in range(0, len(EBins)-1):
     
     # adjust this binning as needed
     if EMin < 50.:
-        lim = 1.
+        lim = 1.5
         bins =50
     elif 50<= EMin < 100:
         lim = 1.
@@ -171,15 +172,29 @@ for Ebin in range(0, len(EBins)-1):
         h_my_proj_2.Draw("HIST")
         gaussFit1.Draw("LSAME")
         cx.Update()
+        
+        # sigma -- stdev on the Gaussian
         sigma = gaussFit1.GetParameter(2)
         sigma_err = gaussFit1.GetParError(2)
+
+        # mu -- mean on the Gaussian
+        mu = gaussFit1.GetParameter(1)
+        mu_err = gaussFit1.GetParError(1)
+
+        # res -- resolution, sigma scaled by mu
+        res = sigma / mu
+        res_err = prop_error(mu, sigma, mu_err, sigma_err)
+
+        res_arr.append(res)
+        res_err_arr.append(res_err)
+
+
         bincenter = (EMax-EMin)/2
         e_arr.append(EMin+bincenter)
         e_err_arr.append(bincenter)
-        sigma_arr.append(sigma)
+        scaled_sigma_arr.append(sigma / mu)
         mu_arr.append(gaussFit1.GetParameter(1))
         mu_err_arr.append(gaussFit1.GetParError(1))
-        print("SIGMA=",sigma)
         sigma_err_arr.append(sigma_err)
     
 
@@ -249,6 +264,14 @@ if region == 'th':
 
 # save arrays to a csv for easy access, plotting
 # change filepath as needed
-res_info = pd.DataFrame({'E': e_arr, 'sigma': sigma_arr, 'E_err': e_err_arr, 'sigma_err': sigma_err_arr})
-res_info.to_csv(f"../ResArrays/{label}_resarrays_{particle}_{region}.csv")
+res_info = pd.DataFrame({'E': e_arr, 'res': res_arr, 'E_err': e_err_arr, 'res_err': res_err_arr})
+res_info.to_csv(f"{label}_resoarrays_{particle}_{region}.csv")
 
+
+def prop_error(mu, sigma, mu_err, sigma_err):
+    """
+    Helper function to propagate the error on resolution measurement in quadrature
+    """
+    res = sigma / mu #scaled resolution
+    res_err = res * np.sqrt((sigma_err / sigma)**2 + (mu_err / mu)**2)
+    return res_err
