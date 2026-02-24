@@ -39,7 +39,9 @@ label = args.label
 # Energy binning
 #EBins_photon = array('d', (30.,50.,100.,150.,200.,300.,400.,500.,650.,
 #    800.,1000., 1500., 2000., 2500., 3000., 3500., 4000., 4500., 5000.))
-EBins_neutron = array('d', (20.,40.,65.,100., 150., 200., 250.))
+#EBins_neutron = array('d', (20.,40.,65.,100., 150., 200., 250.))
+
+EBins_neutron = array('d', (10., 20., 30., 40., 50.))
 EBins_photon = array('d', (10., 20., 30., 40., 50.))
 #ThetaBins = np.linspace(0.175,2.96,30)
 NPhotonBins = np.linspace(0,50,50)
@@ -95,7 +97,7 @@ for Ebin in range(0, len(EBins)-1):
     
     # adjust this binning as needed
     if EMin < 50.:
-        lim = 1.5
+        lim = 1500
         bins =50
     elif 50<= EMin < 100:
         lim = 1.
@@ -152,21 +154,27 @@ for Ebin in range(0, len(EBins)-1):
             elif region == 'a':
                 if theta < 0.18 or theta > 2.96:
                    continue
+
+            print("PASSED REGION CHECK")
             #get rid of any negative theta values
             if theta_reco < 0:
                 continue
+            print("PASSED MATCHING CHECK")
             # get rid of negative energy values, restrict range
             if E_reco < 10.:
                 continue
 
-            neg_lim = -10.
-            pos_lim = 10.
+            print("PASSED ENERGY VALUE CHECK")
+            print(E_corr, E_truth)
+            print((E_corr - E_truth)/E_truth)
+            neg_lim = -100.
+            pos_lim = 100.
             if (E_corr - E_truth)/E_truth > neg_lim and (E_corr - E_truth)/E_truth < pos_lim:
+                print("SOMETHING HERE BRO")
                 h_my_proj_2.Fill((E_corr - E_truth)/E_truth)
         file.Close()
     #now start fitting the gaussians
-
-    lim = 1.
+    lim = 10.
     if EMin<50000:
         gaussFit1 = TF1("gaussfit", "gaus", -lim, lim)
         gaussFit1.SetLineColor(kRed)

@@ -24,6 +24,10 @@ parser.add_option('-i', '--inFile', help='--inFile Output_REC.slcio',
                   type=str, default='Output_REC.slcio')
 parser.add_option('-o', '--outFile', help='--outFile ntup_photons.root',
                   type=str, default='ntup_photons.root')
+parser.add_option('-s', '--start', help='index of first file to read',
+                type = int, default = '0')
+parser.add_option('-e', '--end', help = 'index of last file to read',
+                type = int, default = '1000')
 (options, args) = parser.parse_args()
 
 arrBins_theta = np.linspace(0.175, TMath.Pi()-0.175, 30)#array('d', (0., 30.*TMath.Pi()/180., 40.*TMath.Pi()/180., 50.*TMath.Pi()/180., 60.*TMath.Pi()/180., 70.*TMath.Pi()/180.,
@@ -32,6 +36,7 @@ arrBins_E = array('d', (15., 20., 25., 50., 100., 250., 500., 1000.))#, 2500., 5
 arrBins_E_lowrange = array('d', (15., 20., 25., 30., 35., 40., 45., 50., 75., 100., 125., 150., 200., 250., 300., 350., 400., 450., 500., 600., 700., 800., 900., 1000.))
 arrBins_fakes = np.linspace(0,1000,250)
 arrBins_dR = np.linspace(0,5.,100)
+recobins = np.linspace(0, 10000, 100)
 
 h_E_pass = TH1D('E_pass', 'E_pass', len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
 h_E_all = TH1D('E_all', 'E_all', len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
@@ -43,7 +48,7 @@ h_truth_theta = TH1D('truth_theta', 'truth_theta', len(arrBins_theta)-1, arrBins
 
 h_truth_pT = TH1D('truth_pT', 'truth_pT', len(arrBins_E)-1, arrBins_E) #GeV: true generator pT
 
-h_reco_neutron_E = TH1D('reco_photon_E', 'reco_photon_E', len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
+h_reco_neutron_E = TH1D('reco_neutron_E', 'reco_neutron_E', len(recobins)-1, recobins)
 
 h_hit_dR = TH1D('dR', 'dR', len(arrBins_dR)-1, arrBins_dR)
 h_min_hit_dR = TH1D('mindR', 'mindR', len(arrBins_dR)-1, arrBins_dR)
@@ -88,6 +93,13 @@ else:
 filenum=0
 nevts_proc = 0
 for file in to_process:
+    if filenum < options.start:
+        filenum = filenum + 1
+        continue
+    if filenum > options.end:
+        print(filenum)
+        break
+
     # create a reader and open an LCIO file
     reader = IOIMPL.LCFactory.getInstance().createLCReader()
     try:
@@ -95,17 +107,17 @@ for file in to_process:
     except Exception:
         #let it skip the bad files without breaking
         print("skipping file", filenum)
+        filenum = filenum+1
         continue
     filenum=filenum+1
+
     # loop over all events in the file
     for ievt, event in enumerate(reader):
-        #if filenum % 10 == 0:
-        print(" ")
-        print("File "+str(filenum))
-        print("Processing event " + str(ievt))
-
-
-
+        if filenum % 10 == 0:
+            print(" ")
+            print("File "+str(filenum))
+            print("Processing event " + str(ievt))
+        
         #get the truth particle, always the first in the collection
         mcpCollection = event.getCollection('MCParticle')
         hasBadNuclei = False
@@ -170,19 +182,18 @@ for file in to_process:
             h_reco_neutron_E.Fill(E[0])
             if theta_truth[0] > 0.175 and theta_truth[0] < 2.96:
                 h_E_pass.Fill(E_truth[0])
-                E_pass_test.append(E_truth[0])
             if E_truth[0] > 10:
                 h_theta_pass.Fill(theta_truth[0])
         if theta_truth[0] > 0.175 and theta_truth[0] < 2.96:
             h_E_all.Fill(E_truth[0])
-            E_all_test.append(E_truth[0])
         if E_truth[0] > 10:
             h_theta_all.Fill(theta_truth[0])
         neutron_tree.Fill()
         n_all+=1
     reader.close()
 # write histograms
-output_file = TFile(options.outFile, 'RECREATE')
+outfile_name = f"{options.outFile}_{options.start}-{options.end}.root"
+output_file = TFile(outfile_name, 'RECREATE')
 for histo in histos_list:
     histo.Write()
 neutron_tree.Write()
