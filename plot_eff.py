@@ -71,8 +71,10 @@ for filename in filedict["histofiles"]:
     all_histo_np = all_histo.to_numpy()
     pass_histo_arr = np.asarray(pass_histo_np[0])
     all_histo_arr = np.asarray(all_histo_np[0])
-    pass_slices.append(pass_histo_arr[0:])
-    all_slices.append(all_histo_arr[0:])
+    pha = pass_histo_arr[0:] 
+    aha = all_histo_arr[0:] 
+    pass_slices.append(pha)
+    all_slices.append(aha)
     #all_histo_arr = all_histo_np[0]
     if filenum == len(filedict["histofiles"])-1:
         E_arr = pass_histo_np[1]
@@ -96,8 +98,11 @@ if hasBIB:
         all_histo_np = all_histo.to_numpy()
         pass_histo_arr = np.asarray(pass_histo_np[0])
         all_histo_arr = np.asarray(all_histo_np[0])
-        pass_slices_B.append(pass_histo_arr[0:])
-        all_slices_B.append(all_histo_arr[0:])
+        
+        pha = pass_histo_arr[0:]
+        aha = all_histo_arr[0:]
+        pass_slices_B.append(pha)
+        all_slices_B.append(aha)
         #all_histo_arr = all_histo_np[0]
         if filenum == len(filedict["histofiles_B"])-1:
             E_arr_B = pass_histo_np[1]
@@ -106,8 +111,6 @@ if hasBIB:
         filenum = filenum+1
         print(filenum)
         file.close()
-print(len(filedict["histofiles_B"]))
-
 
 pass_slice = np.add.reduce(pass_slices)#pass_slice_0+pass_slice_1#+pass_slice_2
 all_slice = np.add.reduce(all_slices)#all_slice_0+all_slice_1#+all_slice_2
@@ -130,7 +133,9 @@ if hasBIB:
 #strip out the NaNs that arise from "empty" bins and the corresponding E values (i.e. for the 0-50 slice, all higher-E bins give us NaN eff)
 E_arr = np.array(E_arr)
 E_arr = E_arr[~np.isnan(efficiency_arr)]
+print(E_arr)
 clean_eff_arr = efficiency_arr[~np.isnan(efficiency_arr)]
+print("This is clean_eff_arr:", clean_eff_arr)
 E_errs = np.array(E_errs)
 E_errs = E_errs[~np.isnan(efficiency_arr)]
 if hasBIB:
@@ -140,10 +145,22 @@ if hasBIB:
     clean_eff_arr_B = efficiency_arr_B[~np.isnan(efficiency_arr_B)]
     E_arr_B = np.array(E_arr_B)
     E_arr_B = E_arr_B[~np.isnan(efficiency_arr_B)]
+    E_arr_B = E_arr_B
     E_errs_B = np.array(E_errs_B)
     E_errs_B = E_errs_B[~np.isnan(efficiency_arr_B)]
     asymm_errs_B = getErrorBars(clean_eff_arr_B, pass_slice_B, all_slice_B)
+    if plotvar == "E":
+        E_arr_B = E_arr_B[2:]
+        E_errs_B = E_errs_B[2:]
+        asymm_errs_B = asymm_errs_B[0][2:]
+        clean_eff_arr_B = clean_eff_arr_B[2:]
 asymm_errs = getErrorBars(clean_eff_arr, pass_slice, all_slice) 
+if plotvar == "E":
+    E_arr = E_arr[2:]
+    E_errs = E_errs[2:]
+    asymm_errs = asymm_errs[0][2:]
+    print("this is asymm_errs", asymm_errs)
+    clean_eff_arr = clean_eff_arr[2:]
 
 print(len(E_arr), ",", len(clean_eff_arr))
 print(pass_slice)
@@ -165,16 +182,25 @@ if plotvar == 'theta':
     maj_loc = 0.5
     min_loc = 0.1
     maj_form = '{x:.1f}'
-    plt.gcf().text(0.16, 0.7, f"20 GeV < True {particle} E < 250 GeV")
+    if particle == "Neutron":
+        lowlim = 20
+        highlim = 250
+    else:
+        lowlim = 10
+        highlim = 5000
+    plt.gcf().text(0.16, 0.7, f"{lowlim} GeV < True {particle} E < {highlim} GeV")
 elif plotvar == 'E':
     #ax.set_xlim(E_slices[0][0],E_slices[0][len(E_slices[0])-1])
-    ax.set_xlim(20,250)
+    if particle == "Neutron":
+        ax.set_xlim(20,250)
+    else:
+        ax.set_xlim(30, 5000)
     ax.set_xlabel(f"True {particle} Energy [GeV]", loc='right')
     maj_loc = 50
     min_loc = 10
     maj_form = '{x:.0f}'
     plt.gcf().text(0.16, 0.7, "0.175 < $\\theta$ < 2.96")
-    #ax.set_xscale('log')
+    ax.set_xscale('log')
 ax.set_ylabel(f"{particle} Matching Efficiency", loc='top')
 
 hep.cms.label(exp = "Muon Collider", data = False, label = "with BIB+IPP (EU24 Lattice)", 

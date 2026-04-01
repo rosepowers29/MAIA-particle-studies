@@ -42,6 +42,10 @@ h_E_pass = TH1D('E_pass', 'E_pass', len(arrBins_E_lowrange)-1, arrBins_E_lowrang
 h_E_all = TH1D('E_all', 'E_all', len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
 h_theta_pass = TH1D('theta_pass', 'theta_pass', len(arrBins_theta)-1, arrBins_theta)
 h_theta_all = TH1D('theta_all', 'theta_all', len(arrBins_theta)-1, arrBins_theta)
+
+h_E_pass_barrel = TH1D('E_pass_barrel', 'E_pass_barrel', len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
+h_E_all_barrel = TH1D('E_all_barrel', 'E_all_barrel', len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
+
 # declare histograms
 h_truth_E = TH1D('truth_E', 'truth_E', len(arrBins_E)-1, arrBins_E)
 h_truth_theta = TH1D('truth_theta', 'truth_theta', len(arrBins_theta)-1, arrBins_theta)
@@ -150,7 +154,7 @@ for file in to_process:
         for PFO in PFOCollection:
             E_pf = PFO.getEnergy()
             #require minimum PF energy
-            if E_pf < 10.:
+            if E_pf < 5.:
                 continue
             p3 = PFO.getMomentum()
             ptlv = TLorentzVector()
@@ -182,10 +186,14 @@ for file in to_process:
             h_reco_neutron_E.Fill(E[0])
             if theta_truth[0] > 0.175 and theta_truth[0] < 2.96:
                 h_E_pass.Fill(E_truth[0])
+                if theta_truth[0] > 0.99 and theta_truth[0] < 2.15:
+                    h_E_pass_barrel.Fill(E_truth[0])
             if E_truth[0] > 10:
                 h_theta_pass.Fill(theta_truth[0])
         if theta_truth[0] > 0.175 and theta_truth[0] < 2.96:
             h_E_all.Fill(E_truth[0])
+            if theta_truth[0] > 0.99 and theta_truth[0] < 2.15:
+                h_E_all_barrel.Fill(E_truth[0])
         if E_truth[0] > 10:
             h_theta_all.Fill(theta_truth[0])
         neutron_tree.Fill()

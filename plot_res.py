@@ -21,7 +21,10 @@ def get_arr_and_err(csv_in, arrkey):
     """
     df_ = pd.read_csv(csv_in)
     res_arr = df_[arrkey]
-    res_err_arr = df_[arrkey+"_err"]
+    if arrkey+"_err" in df_.columns:
+        res_err_arr = df_[arrkey+"_err"]
+    else:
+        res_err_arr = None
     return res_arr, res_err_arr
 
 
@@ -36,10 +39,10 @@ def make_labels(ax, region, particle):
     # make region label
     if region == 't':
         ax.get_figure().text(0.165,0.7,"Transition Region ($0.7<\\theta<0.99$ or $2.15<\\theta<2.44$)",fontsize=9)
-        ax.set_ylim(0., 1.)
+        ax.set_ylim(0., .4)
     elif region == 'b':
         ax.get_figure().text(0.165, 0.7, "Central Barrel Region ($0.99<\\theta<2.15$)",fontsize=9)
-        ax.set_ylim(0., 1.)
+        ax.set_ylim(0., .2)
     elif region == 'e':
         ax.get_figure().text(0.165,0.7, "Endcap Region ($0.175<\\theta < 0.7$ or $2.44< \\theta < 2.96$)",fontsize=9)
         ax.set_ylim(0., 1.)
@@ -51,7 +54,7 @@ def make_labels(ax, region, particle):
 
     # make axis labels
     ax.set_xlabel(f"True {particle} Energy [GeV]", loc = 'right')
-    ax.set_ylabel(f"{particle} Energy Resolution ($\\sigma /( \\mu$+1)) [%]", loc='top')
+    ax.set_ylabel(f"{particle} Energy Resolution (IQR$_{{68}}$ / (2 * (1 + median)))", loc='top')
 
 def format_plots(ax, big_ticks_x, small_ticks_x, big_ticks_y, small_ticks_y, log=False):
     """
@@ -65,7 +68,7 @@ def format_plots(ax, big_ticks_x, small_ticks_x, big_ticks_y, small_ticks_y, log
     :param log: Description
     """
     ax.xaxis.set_major_locator(MultipleLocator(big_ticks_x))
-    ax.xaxis.set_major_formatter('{x:.1f}')
+    ax.xaxis.set_major_formatter('{x:.0f}')
     ax.xaxis.set_minor_locator(MultipleLocator(small_ticks_x))
      
     ax.yaxis.set_major_locator(MultipleLocator(big_ticks_y))
@@ -77,7 +80,7 @@ def format_plots(ax, big_ticks_x, small_ticks_x, big_ticks_y, small_ticks_y, log
     if log:
        ax.set_xscale('log')
 
-def plot_data(ax, E_arr, E_err, res_arr, res_err, B=False):
+def plot_data(ax, E_arr, E_err, iqr_arr, iqr_err, B=False):
     """
     Docstring for plot_data
      
@@ -95,28 +98,29 @@ def plot_data(ax, E_arr, E_err, res_arr, res_err, B=False):
         color = "blue"
         label = "Without BIB+IPP"
 
-    ax.errorbar(E_arr, res_arr, xerr = E_err, yerr = res_err, fmt = ".", color = color, label = label)
+    ax.errorbar(E_arr, iqr_arr, xerr = E_err, yerr = iqr_err, fmt = ".", color = color, label = label)
+    #ax.scatter(E_arr, iqr_arr, color = color, label = label, s = 4)
 
 def main(infile_nb, infile_b, region, particle, outfile):
     fig, ax = plt.subplots()
     if infile_nb is not None:
         # get files
         E_arr, E_err_arr = get_arr_and_err(infile_nb, "E")
-        res_arr, res_err_arr = get_arr_and_err(infile_nb, "res")
-
+        #res_arr, res_err_arr = get_arr_and_err(infile_nb, "res")
+        iqr_res_arr, iqr_res_err_arr = get_arr_and_err(infile_nb, "iqr_res")
         # plot errorbars
-        plot_data(ax, E_arr, E_err_arr, res_arr, res_err_arr, False)
+        plot_data(ax, E_arr, E_err_arr, iqr_res_arr, iqr_res_err_arr, False)
     
     if infile_b is not None:
         # get files
         E_arr_B, E_err_arr_B = get_arr_and_err(infile_b, "E")
-        res_arr_B, res_err_arr_B = get_arr_and_err(infile_b, "res")
-        
+        #res_arr_B, res_err_arr_B = get_arr_and_err(infile_b, "res")
+        iqr_res_arr, iqr_res_err_arr = get_arr_and_err(infile_b, "iqr_res")
         # plot errorbars
-        plot_data(ax, E_arr_B, E_err_arr_B, res_arr_B, res_err_arr_B, True)
+        plot_data(ax, E_arr_B, E_err_arr_B, iqr_res_arr, iqr_res_err_arr, True)
     
     make_labels(ax, region, particle)
-    format_plots(ax, 10, 5, 0.2, 0.05, False)
+    format_plots(ax, 1000, 500, 0.05, 0.025, False)
 
     fig.savefig(outfile)
     print(outfile,"created")

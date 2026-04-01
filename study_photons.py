@@ -31,8 +31,11 @@ parser.add_option('-e', '--end', help = 'index of last file to read',
 arrBins_theta = np.linspace(0.175, TMath.Pi()-0.175, 30)#array('d', (0., 30.*TMath.Pi()/180., 40.*TMath.Pi()/180., 50.*TMath.Pi()/180., 60.*TMath.Pi()/180., 70.*TMath.Pi()/180.,
                             #90.*TMath.Pi()/180., 110.*TMath.Pi()/180., 120.*TMath.Pi()/180., 130.*TMath.Pi()/180., 140.*TMath.Pi()/180., 150.*TMath.Pi()/180., TMath.Pi()))
 arrBins_E = array('d', (0., 5., 10., 15., 20., 25., 50., 100., 250., 500., 1000.))#, 2500., 5000.))
-arrBins_E_lowrange = array('d', (0., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50., 75., 100., 125., 150., 200., 250., 300., 350., 400., 450., 500., 600., 700., 800., 900., 1000.))
+arrBins_E_lowrange = array('d', (10., 15., 20., 25., 30., 35., 40., 45., 
+    50., 75., 100., 125., 150., 200., 250., 300., 350., 400., 450., 
+    500., 600., 700., 800., 900., 1000., 1500., 2000., 2500, 3000., 4000., 5000.))
 arrBins_fakes = np.linspace(0,1000,250)
+
 
 #Global Flag
 do_calo_tree = False
@@ -41,6 +44,9 @@ do_calo_tree = False
 
 h_E_pass = TH1D('E_pass', 'E_pass', len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
 h_E_all = TH1D('E_all', 'E_all', len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
+
+h_E_pass_barrel = TH1D('E_pass_barrel', "E_pass_barrel", len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
+h_E_all_barrel = TH1D('E_all_barrel', 'E_all_barrel', len(arrBins_E_lowrange)-1, arrBins_E_lowrange)
 
 h_theta_pass = TH1D('theta_pass', 'theta_pass', len(arrBins_theta)-1, arrBins_theta)
 h_theta_all = TH1D('theta_all', 'theta_all', len(arrBins_theta)-1, arrBins_theta)
@@ -162,17 +168,20 @@ for file in to_process:
         else:
             if theta_truth[0] > 0.175 and theta_truth[0] < 2.96:
                 h_E_pass.Fill(E_truth[0])
+                if theta_truth[0] > 0.99 and theta_truth[0] < 2.15:
+                    h_E_pass_barrel.Fill(E_truth[0])
             if E_truth[0] > 10:
                 h_theta_pass.Fill(theta_truth[0])
         if theta_truth[0] > 0.175 and theta_truth[0] < 2.96:
             h_E_all.Fill(E_truth[0])
+            if theta_truth[0] > 0.99 and theta_truth[0] < 2.15:
+                h_E_all_barrel.Fill(E_truth[0])
         if E_truth[0] > 10:
             h_theta_all.Fill(theta_truth[0])
         photon_tree.Fill()
     reader.close()
     
 # write histograms
-print("out of main loop")
 try:
     outfile_name = f"{options.outFile}_{options.start}-{options.end}.root"
 except Exception:

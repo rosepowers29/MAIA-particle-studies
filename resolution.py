@@ -37,12 +37,12 @@ particle = args.particle
 label = args.label
 
 # Energy binning
-#EBins_photon = array('d', (30.,50.,100.,150.,200.,300.,400.,500.,650.,
-#    800.,1000., 1500., 2000., 2500., 3000., 3500., 4000., 4500., 5000.))
+EBins_photon = array('d', (30.,50.,100.,150.,200.,300.,400.,500.,650.,
+    800.,1000., 1500., 2000., 2500., 3000., 3500., 4000., 4500., 5000.))
 #EBins_neutron = array('d', (20.,40.,65.,100., 150., 200., 250.))
 
 EBins_neutron = array('d', (10., 20., 30., 40., 50.))
-EBins_photon = array('d', (10., 20., 30., 40., 50.))
+#EBins_photon = array('d', (10., 20., 30., 40., 50.))
 #ThetaBins = np.linspace(0.175,2.96,30)
 NPhotonBins = np.linspace(0,50,50)
 
@@ -67,6 +67,7 @@ mu_arr_th = array('d')
 mu_arr_th_err = array('d')
 res_arr = array('d')
 res_err_arr = array('d')
+iqr_res_arr = array('d')
 
 def prop_error(mu, sigma, mu_err, sigma_err):
     """
@@ -85,6 +86,7 @@ if particle == "photon":
     EBins = EBins_photon
 elif particle == "neutron":
     EBins = EBins_neutron
+bin_list = []
 for Ebin in range(0, len(EBins)-1):
     #if EBins_v5[Ebin]>225:
     #    break
@@ -94,10 +96,11 @@ for Ebin in range(0, len(EBins)-1):
     EMax = EBins[Ebin+1]
     proj_name = str(EBins[Ebin])+" GeV<E<"+str(EBins[Ebin+1])+" GeV"
     file_name = "Ereso"+str(Ebin)
-    
+    bin_list.clear()
+    print("bin_list:", bin_list) #check to make sure it got cleared
     # adjust this binning as needed
     if EMin < 50.:
-        lim = 1500
+        lim = 1.
         bins =50
     elif 50<= EMin < 100:
         lim = 1.
@@ -155,23 +158,18 @@ for Ebin in range(0, len(EBins)-1):
                 if theta < 0.18 or theta > 2.96:
                    continue
 
-            print("PASSED REGION CHECK")
             #get rid of any negative theta values
             if theta_reco < 0:
                 continue
-            print("PASSED MATCHING CHECK")
             # get rid of negative energy values, restrict range
             if E_reco < 10.:
                 continue
 
-            print("PASSED ENERGY VALUE CHECK")
-            print(E_corr, E_truth)
-            print((E_corr - E_truth)/E_truth)
             neg_lim = -100.
             pos_lim = 100.
             if (E_corr - E_truth)/E_truth > neg_lim and (E_corr - E_truth)/E_truth < pos_lim:
-                print("SOMETHING HERE BRO")
                 h_my_proj_2.Fill((E_corr - E_truth)/E_truth)
+            bin_list.append((E_corr - E_truth) / E_truth)
         file.Close()
     #now start fitting the gaussians
     lim = 10.
@@ -205,15 +203,20 @@ for Ebin in range(0, len(EBins)-1):
         res_arr.append(res)
         res_err_arr.append(res_err)
 
-        print(res)
-        print(res_err)
         bincenter = (EMax-EMin)/2
         e_arr.append(EMin+bincenter)
         e_err_arr.append(bincenter)
         mu_arr.append(gaussFit1.GetParameter(1))
         mu_err_arr.append(gaussFit1.GetParError(1))
         sigma_err_arr.append(sigma_err)
-    
+
+        # alternate resolution method
+        # calculated with 68% interquartile range
+        bin_arr = np.array(bin_list)
+        med = np.median(bin_arr)
+        iqr_68 = np.percentile(bin_arr, 84) - np.percentile(bin_arr, 16)
+        iqr_res = abs(iqr_68 / (2 * (med + 1)))
+        iqr_res_arr.append(iqr_res)
 
 # theta scan
 if region == 'th':
@@ -281,7 +284,7 @@ if region == 'th':
 
 # save arrays to a csv for easy access, plotting
 # change filepath as needed
-res_info = pd.DataFrame({'E': e_arr, 'res': res_arr, 'E_err': e_err_arr, 'res_err': res_err_arr})
+res_info = pd.DataFrame({'E': e_arr, 'res': res_arr, 'E_err': e_err_arr, 'res_err': res_err_arr, 'iqr_res': iqr_res_arr})
 res_info.to_csv(f"{label}_resoarrays_{particle}_{region}.csv")
 
 
